@@ -65,8 +65,8 @@ export default class App extends Component {
                         <Link to={{
                             pathname: '/compare',
                             query: {
-                                first: this.state.selected.get(0),
-                                second: this.state.selected.get(1),
+                                base: this.state.selected.get(0),
+                                diff: this.state.selected.get(1),
                             }}}>
                             <Button raised>Compare</Button>
                         </Link>

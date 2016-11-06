@@ -45,3 +45,4 @@ jspm_packages
 
 # webpack output
 static/bundle.js
+release

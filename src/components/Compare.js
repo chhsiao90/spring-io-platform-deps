@@ -5,37 +5,48 @@ export default class Compare extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            first: this.props.location.query.first,
-            second: this.props.location.query.second,
             diffTable: [],
         };
     }
 
-    componentDidMount() {
-        const {first, second} = this.props.location.query;
-        if (first && second) {
-            var fetchFirst = fetch(`./history/platform-bom-${first}.properties`)
-                .then(response => response.text());
-            var fetchSecond = fetch(`./history/platform-bom-${second}.properties`)
-                .then(response => response.text());
-            Promise.all([fetchFirst, fetchSecond]).then(values => {
-                this.setState({
-                    diffTable: compare(values[0], values[1]),
-                });
-            });
+    componentWillMount() {
+        const {base, diff} = this.props.location.query;
+        if (base && diff) {
+            this.updateDiffTable(base, diff);
         }
     }
 
+    componentWillReceiveProps(nextProps) {
+        const {prevBase, prevDiff} = this.props.location.query;
+        const {base, diff} = nextProps.location.query;
+        if (base && diff && (prevBase != base || prevDiff != diff)) {
+            this.updateDiffTable(base, diff);
+        }
+    }
+
+    updateDiffTable(base, diff) {
+        var baseDepsPromise = fetch(`./history/platform-bom-${base}.properties`)
+            .then(response => response.text());
+        var diffDepsPromise = fetch(`./history/platform-bom-${diff}.properties`)
+            .then(response => response.text());
+        Promise.all([baseDepsPromise, diffDepsPromise]).then(values => {
+            const [baseDeps, diffDeps] = values;
+            this.setState({
+                diffTable: compare(baseDeps, diffDeps),
+            });
+        });
+    }
+
     render() {
-        const {first, second} = this.props.location.query;
-        if (first && second && this.state.diffTable.length) {
+        const {base, diff} = this.props.location.query;
+        if (base && diff && this.state.diffTable.length) {
             return (
                 <DataTable
                     rows={this.state.diffTable}>
                     <TableHeader name='groupId'>Group</TableHeader>
                     <TableHeader name='artifactId'>Artifact</TableHeader>
-                    <TableHeader name='baseVersion'>{first} Version</TableHeader>
-                    <TableHeader name='diffVersion'>{second} Version</TableHeader>
+                    <TableHeader name='baseVersion'>{base} Version</TableHeader>
+                    <TableHeader name='diffVersion'>{diff} Version</TableHeader>
                 </DataTable>
             );
         }
@@ -47,12 +58,12 @@ export default class Compare extends Component {
     }
 }
 
-const compare = function(first, second) {
+const compare = function(base, diff) {
     const keyOf = entry => `${entry.groupId}:${entry.artifactId}`;
-    const firstTable = parse(first);
-    const secondTable = parse(second);
+    const baseTable = parse(base);
+    const diffTable = parse(diff);
     var compareTable = new Map();
-    firstTable.forEach(entry => {
+    baseTable.forEach(entry => {
         compareTable.set(keyOf(entry), {
             groupId: entry.groupId,
             artifactId: entry.artifactId,
@@ -60,7 +71,7 @@ const compare = function(first, second) {
             stat: 'Delete',
         });
     });
-    secondTable.forEach(entry => {
+    diffTable.forEach(entry => {
         const key = keyOf(entry);
         if (compareTable.has(key)) {
             compareTable.get(key).diffVersion = entry.version;

@@ -30,6 +30,7 @@
     "webpack-dev-server": "^1.16.2"
   },
   "scripts": {
-    "start": "webpack-dev-server -d --hot --content-base static"
+    "start": "webpack-dev-server -d --hot --content-base static",
+    "build": "webpack"
   }
 }
