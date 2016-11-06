@@ -84,7 +84,7 @@ const compare = function(base, diff) {
             compareTable.set(key, {
                 groupId: entry.groupId,
                 artifactId: entry.artifactId,
-                baseVersion: entry.version,
+                diffVersion: entry.version,
                 stat: 'New',
             });
         }
