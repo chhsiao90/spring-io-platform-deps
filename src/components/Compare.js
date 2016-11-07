@@ -37,41 +37,75 @@ export default class Compare extends Component {
         });
     }
 
+    renderCell(cell, row, index) {
+        const style = {
+            Delete: {
+                color: 'red',
+            },
+            Update: {
+                color: 'blue',
+            },
+            New: {
+                color: 'green',
+            },
+        };
+        return (
+            <span style={style[row['stat']] || {}}>
+                {cell}
+            </span>
+        );
+    }
+
     render() {
         const {base, diff} = this.props.location.query;
         if (base && diff && this.state.diffTable.length) {
             return (
                 <DataTable
                     rows={this.state.diffTable}>
-                    <TableHeader name='groupId'>Group</TableHeader>
-                    <TableHeader name='artifactId'>Artifact</TableHeader>
-                    <TableHeader name='baseVersion'>{base} Version</TableHeader>
-                    <TableHeader name='diffVersion'>{diff} Version</TableHeader>
+                    <TableHeader
+                        name='groupId'
+                        cellFormatter={this.renderCell}>
+                        Group
+                    </TableHeader>
+                    <TableHeader
+                        name='artifactId'
+                        cellFormatter={this.renderCell}>
+                        Artifact
+                    </TableHeader>
+                    <TableHeader
+                        name='baseVersion'
+                        cellFormatter={this.renderCell}>
+                        {base} Version
+                    </TableHeader>
+                    <TableHeader
+                        name='diffVersion'
+                        cellFormatter={this.renderCell}>
+                        {diff} Version
+                    </TableHeader>
                 </DataTable>
             );
         }
         else {
             return (
                 <div />
-            )
-        };
+            );
+        }
     }
 }
 
 const compare = function(base, diff) {
     const keyOf = entry => `${entry.groupId}:${entry.artifactId}`;
-    const baseTable = parse(base);
-    const diffTable = parse(diff);
-    var compareTable = new Map();
-    baseTable.forEach(entry => {
-        compareTable.set(keyOf(entry), {
+    let compareTable = new Map();
+    parse(base).forEach(entry => {
+        const key = keyOf(entry);
+        compareTable.set(key, {
             groupId: entry.groupId,
             artifactId: entry.artifactId,
             baseVersion: entry.version,
             stat: 'Delete',
         });
     });
-    diffTable.forEach(entry => {
+    parse(diff).forEach(entry => {
         const key = keyOf(entry);
         if (compareTable.has(key)) {
             compareTable.get(key).diffVersion = entry.version;
@@ -90,11 +124,12 @@ const compare = function(base, diff) {
         }
     });
     return Array.from(compareTable.values());
-}
+};
 
 const parse = function(versionTable) {
     return versionTable
         .split('\n')
+        .filter((elem, pos, arr) => arr.indexOf(elem) == pos)
         .map(text => /(.+)\\:(.+)=(.+)/g.exec(text))
         .filter(matcher => matcher)
         .map(matcher => {
@@ -104,4 +139,4 @@ const parse = function(versionTable) {
                 version: matcher[3],
             };
         });
-}
+};
